@@ -177,6 +177,8 @@ Taking a look into this function a bit more, we can see this function doesn't cr
 
 Although IDA's decompilation here is a bit confusing, what this function does is look for a few constant values - one of the options is `0x800C`. If the value `0x800C` is provided, the output parameter (which is the hash size based on function name and the fact the actual return value is of type NTSTATUS) is set to `0x20`. This effectively insinuates that since obviously `0x800C` is not a `0x20` byte value, nor a hash, that `0x800C` must instead refer to a _type_ of hash which is likely associated with an image. We can then essentially say that the last Secure System Call parameter for secure image creation is the "type" of hash associated with this image. In fact, looking at cross references to this function reveals that the function `skci!CiInitializeCatalogs` passes the parameter `skci!g_CiMinimumHashAlgorithm` as the first parameter to this function - meaning that the first parameter actually specifies the _hash algorithm_.
 
+> Edit: I realize I neglected to mention in this case `0x800C` is SHA256. Thank you to my friend Alex Ionescu for pointing out the fact I omitted this in the blog!
+
 After calculating the hash size, the Secure Image Context is then built out. This starts by obtaining the Image Headers (`nt!_IMAGE_NT_HEADERS64`) headers for the image. Then the Secure Image Context is allocated from the pool and initialized to `0` (this is how we know the Secure Image Context is `0x110` bytes in size). The various sections contained in the image are used to build out much of the information tracked by the Secure Image Context.
 
 <img src="{{ site.url }}{{ site.baseurl }}/images/secureimage20.png" alt="">
