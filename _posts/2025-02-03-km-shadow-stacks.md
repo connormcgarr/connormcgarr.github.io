@@ -199,7 +199,7 @@ Easily-locatable is the function `winload!OslSetVsmPolicy` in `winload.exe`. In 
 
 <img src="{{ site.url }}{{ site.baseurl }}/images/kcet31.png" alt="">
 
-The reason why I have belabored this point is to outline that kernel CET **_REQUIRES_** that HVCI be enabled on Windows! We will see specifically why in the next section
+The reason why I have belabored this point is to outline that kernel CET **_REQUIRES_** that HVCI be enabled on Windows! We will see specifically why in the next section.
 
 Moving on, this call to `nt!VslAllocateKernelShadowStack` will result in a secure system call. Note that `_SHADOW_STACK_SECURE_CALL_ARGS` is not a public type and is just a "custom" local type I created in IDA based on reverse engineering.
 
