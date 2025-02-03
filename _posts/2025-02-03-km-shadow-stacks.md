@@ -333,7 +333,7 @@ To find out if this is a restore token we can set a break-on-access breakpoint o
 
 When a `rstorssp` instruction occurs, the restore token (which is now the SSP) is replaced (swapped) with a "previous SSP" token - which is the old SSP. We can see in the second-to-last screenshot that the restore token was swapped out with some other address, which was the old SSP. If we examine the old SSP, we can see the thread associated with this stack was doing work similar to our target shadow stack.
 
-This outlines how the target shadow stack, as a result of the secure system call, is switched to! A restore token was created for the "in-scope" shadow stack and, when execution returned to VTL 0, the `rstorssp` instruction was used to switch to this shadow stack as part of execution!
+This outlines how the target shadow stack, as a result of the secure system call, is switched to! A restore token was created for the "in-scope" shadow stack and, when execution returned to VTL 0, the `rstorssp` instruction was used to switch to this shadow stack as part of execution! Thank you (as always) to my friend [Alex Ionescu](https://x.com/aionescu) for pointing me in the right direction in regards to restore tokens.
 
 Moving on, after the initialization is achieved (the token and target return address are set), the Secure Kernel's usage of the shadow stack is complete, meaning we no longer need the hyperspace mapping. Recall that this was just the _Secure Kernel_ mapping of the target shadow stack. Although this page will be unmapped from the Secure Kernel's _virtual address space_, these changes will still remain committed to _physical_ memory. This can be seen below by inspecting the _physical_ memory associated with the target shadow stack.
 
