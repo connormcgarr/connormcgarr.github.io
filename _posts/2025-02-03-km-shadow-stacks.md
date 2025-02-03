@@ -1,6 +1,6 @@
 ---
 title: "Exploit Development: Investigating Kernel Mode Shadow Stacks on Windows"
-date: 2024-02-03
+date: 2025-02-03
 tags: [posts]
 excerpt: "Using SourcePoint's JTAG debugger to investigate the implementation of Intel CET Shadow Stacks in kernel-mode on Windows"
 ---
