@@ -77,7 +77,7 @@ The last two code paths depend on how `Thread->MiscFlags` is configured. The fir
 
 <img src="{{ site.url }}{{ site.baseurl }}/images/kcet8.png" alt="">
 
-Continuing on, the next path that can be taken is based on the following statement: `ShadowStackType = (miscFlags >> 8) & 1;`. What this actually does is it shifts all of the bits in the mask to "the right" by 8 bytes. The desired effect here is that the 8th bit (from an offset of 0) is moved to the first (0th) position. Since `1`, in decimal, is `00000001` in binary - this allows the 8th bit (from an offset of 0) to be bitwise "AND'd" 1. In other words, this checks if the 8th bit (from an offset of 0) is set.
+Continuing on, the next path that can be taken is based on the following statement: `ShadowStackType = (miscFlags >> 8) & 1;`. What this actually does is it shifts all of the bits in the mask to "the right" by 8 bits. The desired effect here is that the 8th bit (from an offset of 0) is moved to the first (0th) position. Since `1`, in decimal, is `00000001` in binary - this allows the 8th bit (from an offset of 0) to be bitwise "AND'd" 1. In other words, this checks if the 8th bit (from an offset of 0) is set.
 
 <img src="{{ site.url }}{{ site.baseurl }}/images/kcet9.png" alt="">
 
@@ -259,7 +259,7 @@ This loop will iterate over the number of PTEs related to the shadow stack regio
 
 <img src="{{ site.url }}{{ site.baseurl }}/images/kcet41.png" alt="">
 
-Now you will see that I have commented on this call this will mark the pages as read-only. How did I validate this? The call to `securekernel!SkmiProtectPageRange` will, under the hook, emit a hypercall (`vmcall`) with a hypercall code of `12` (decimal). As I mentioned before in a [post about HVCI](https://connormcgarr.github.io/hvci/) that the call code of `12`, or `0xC` in hex, corresponds to the `HvCallModifyVtlProtectionMask` hypercall, according to the TLFS ([Hypervisor Top Level Functional Specification](https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/tlfs/tlfs)). This hypercall is capable of requesting that a given guest page's protection mask is modified. If we inspect the arguments of the hypercall, using SourcePoint, we can get a clearer picture of what this call does.
+Now you will see that I have commented on this call this will mark the pages as read-only. How did I validate this? The call to `securekernel!SkmiProtectPageRange` will, under the hood, emit a hypercall (`vmcall`) with a hypercall code of `12` (decimal). As I mentioned before in a [post about HVCI](https://connormcgarr.github.io/hvci/) that the call code of `12`, or `0xC` in hex, corresponds to the `HvCallModifyVtlProtectionMask` hypercall, according to the TLFS ([Hypervisor Top Level Functional Specification](https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/tlfs/tlfs)). This hypercall is capable of requesting that a given guest page's protection mask is modified. If we inspect the arguments of the hypercall, using SourcePoint, we can get a clearer picture of what this call does.
 
 <img src="{{ site.url }}{{ site.baseurl }}/images/kcet42.png" alt="">
 
