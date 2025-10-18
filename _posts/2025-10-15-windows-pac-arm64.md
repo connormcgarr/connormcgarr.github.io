@@ -85,9 +85,9 @@ C:\>C:\WindowsPAC.exe
 
 Once the appropriate PAC-related initialization flags have been set, PAC is then enabled on a per-process basis (if per-process PAC is supported, which currently on Windows it is). For user-mode PAC, the enablement process begins at process creation, specifically during the allocation of the new process object. If PAC is enabled, each user-mode process (meaning `EPROCESS->Flags3.SystemProcess` is not set) is unconditionally opted-in to PAC (as all kernel-mode code shares a global signing key).
 
-Additionally, likely as a side effect of Intel CET enablement on x86-based installations of Windows, the mitigation value [`CetDynamicApisOutOfProcOnly`](https://windows-internals.com/cet-updates-dynamic-address-ranges/) is also set unconditionally for _every_ process except for the Idle process on Windows.
-
 <img src="{{ site.url }}{{ site.baseurl }}/images/pac9.png" alt="">
+
+Additionally, likely as a side effect of Intel CET enablement on x86-based installations of Windows, the mitigation value [`CetDynamicApisOutOfProcOnly`](https://windows-internals.com/cet-updates-dynamic-address-ranges/) is also set unconditionally for _every_ process except for the Idle process on Windows.
 
 For the sake of completeness, the CET dynamic address range feature is not actually supported as the `PROCESSINFOCLASS` enum value `ProcessDynamicEnforcedCetCompatibleRanges`, for the `NtSetInformationProcess` system service, always returns `STATUS_NOT_SUPPORTED` on Windows ARM systems.
 
