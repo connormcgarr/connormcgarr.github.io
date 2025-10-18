@@ -89,9 +89,11 @@ Once the appropriate PAC-related initialization flags have been set, PAC is then
 
 Additionally, likely as a side effect of Intel CET enablement on x86-based installations of Windows, the mitigation value [`CetDynamicApisOutOfProcOnly`](https://windows-internals.com/cet-updates-dynamic-address-ranges/) is also set unconditionally for _every_ process except for the Idle process on Windows.
 
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac10.png" alt="">
+
 For the sake of completeness, the CET dynamic address range feature is not actually supported as the `PROCESSINFOCLASS` enum value `ProcessDynamicEnforcedCetCompatibleRanges`, for the `NtSetInformationProcess` system service, always returns `STATUS_NOT_SUPPORTED` on Windows ARM systems.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac10.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac11.png" alt="">
 
 Returning to user-mode PAC, Windows SDK contains two documented ways to enable/disable PAC for user-mode processes. For extended process creation parameters, the following parameters are available in the SDK:
 
@@ -124,7 +126,7 @@ typedef struct _PROCESS_MITIGATION_USER_POINTER_AUTH_POLICY {
 
 However, testing and reverse engineering revealed that PAC is unconditionally enabled on user-mode processes (as shown above) with no way to disable the mitigation either at process creation (e.g., creating a child process with extended parameters) or by calling `SetProcessMitigationPolicy` at runtime. The only other supported way to enable a process mitigation at process creation is to use the `ImageFileExecutionOptions` (IFEO) registry key. This functionality is wrapped by the "Exploit Protection" UI on Windows systems, but the registry value can be set manually. Unfortunately, there is no PAC Exploit Protection setting in the UI.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac11.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac12.png" alt="">
 
 Outside of the exploit mitigation policy for PAC, there is also an _audit-mode_ exploit mitigation policy option in the `ImageFileExecutionOptions` policy map. This can be confirmed through the presence of the mitigation flag values of `AuditPointerAuthUserIp` and `AuditPointerAuthUserIpLogged` in the `MitigationFlags2Values` field of a process object on Windows.
 
