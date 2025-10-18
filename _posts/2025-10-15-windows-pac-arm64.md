@@ -132,19 +132,19 @@ Outside of the exploit mitigation policy for PAC, there is also an _audit-mode_ 
 
 The IFEO registry key contains a list of processes that have IFEO values. One of the items encapsulated in the IFEO key, as mentioned, is both the mitigation policy settings and _audit-mode_ mitigation policy settings (meaning that an ETW event is logged but the target operation is not blocked/process is not terminated by a mitigation violation) for a target process. These per-process mitigation values are used in making considerations about what mitigation policies will be applied to a particular target process at process creation time. On a default installation of Windows 11 24H2 running an ARM build of Windows, no processes have the audit-mode PAC flags set.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac12.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac13.png" alt="">
 
 Further investigation reveals that this is because there is no way to set the PAC audit-mode exploit policy value on a per-process basis, even through the IFEO key. This is because if pointer authentication is enabled, for example, the slot in the map (represented by the `0x000000000000X000` nibble) in which audit-mode PAC may be enabled is explicitly overridden by `PspAllocateProcess` (and no ETW event exists in the manifest of the `Microsoft-Windows-Security-Mitigations` ETW provider for PAC violations).
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac13.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac14.png" alt="">
 
 Once PAC support has been instantiated for the process, the per-process signing key is configured. Yes, this means that each process has its own key it can use to sign pointers. This occurs in `PspAllocateProcess` and, if a process has not opted in to inheriting the signing key, a random key is generated with `BCryptGenRandom`.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac14.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac15.png" alt="">
 
 The "per-process" signing key differs from the initial (kernel) signing key that was configured in `KiSystemStartup`. This is because, obviously, execution is in kernel mode when the initial signing key is instantiated. However, the implementation of PAC on Windows (as we can see above) instruments a per-process signing key (along with a single kernel key). When execution transitions into user mode, the signing key system register(s) are updated to the current process signing key (which is maintained through a process object). The example below outlines the current PAC signing key being updated to that of a user-mode process, specifically when a return into user-mode happens after a system call is handled by the kernel (`KiSystemServiceExit`).
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac15.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac16.png" alt="">
 
 This is how the necessary PAC infrastructure is updated for user-to-kernel and kernel-to-user transitions and how kernel-mode and user-mode PAC on Windows is set up. Let's now examine what Windows does when the proper infrastructure is in place.
 
@@ -156,23 +156,23 @@ In the ARM64 architecture, the semantics of preserving return addresses across c
 
 The `pacibsp` instruction will use "key b" (`APIBKeyLo_EL1` and `APIBKeyHi_EL1`) and the value of the in-scope stack pointer to sign the return address. The target return address will remain in this state, with the upper bits (non-canonical) being transformed through the signing.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac16.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac17.png" alt="">
 
 This assumes, however, that there is already a return address to process. What if a user-mode thread, for example, is just entering its initial execution, and there is no return address? Windows has two functions (for user-mode and kernel-mode) that will generate the necessary "first" signed return address via `KiGenerateSignedReturnAddressForStartUserThread`. These functions accept the initial stack value as the value to use in the signing of the return address, using instead the pacib instruction, which is capable of using a general-purpose architectural register in the signing process instead of just defaulting to "the current stack pointer".
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac17.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac18.png" alt="">
 
 At this point, the return address (stored in `lr`, but also present on the stack) has been signed. The in-scope function performs its work and eventually the epilogue of a function is reached (which is responsible for returning to the caller for the current function). When the epilogue is reached, but before the `ret` has been executed, the `autibsp` instruction is used to authenticate the return address (in `lr`) before performing the return control-flow transfer. This will result in transforming the value in `lr` back to the "original" return address so that the return occurs back into a valid memory address.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac18.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac19.png" alt="">
 
 The effectiveness of PAC, however, relies on what happens if a return address has been corrupted with a malicious return address, like a ROP gadget or the corruption of a return address through a stack-based buffer overflow. In the example below, this is outlined by corrupting a return address on the stack with another return address on the stack. Both of these addresses used in this memory corruption example are signed, but, as we can recall from earlier, return addresses are signed with the considerations of the current in-scope stack pointer (meaning they are tied to a stack frame). Because the corrupted return address does not correspond to an "in-scope" stack frame, the authentication of the in-scope return address (which has been corrupted) results in a `__fastfail` with the code `FAST_FAIL_POINTER_AUTH_INVALID_RETURN_ADDRESS` - and the application crashes. One interesting note, as you can see, is that WinDbg can convert a signed return address on the stack to its actual unsigned value (and appropriate symbol name).
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac19.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac20.png" alt="">
 
 Shifting focus slightly, when a kernel-mode PAC violation, identical to the previous scenario, occurs, a `KERNEL_SECURITY_CHECK_FAILURE` ensues, with the type of memory safety violation being `FAST_FAIL_POINTER_AUTH_INVALID_RETURN_ADDRESS`.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac20.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac21.png" alt="">
 
 Secure Kernel And PAC
 ---
@@ -180,7 +180,7 @@ The curious reader may notice that the kernel itself is responsible for managing
 
 HyperGuard uses what is known as extents, which are definitions of what components/code/data/etc. should be protected by HyperGuard. On ARM64 installations of Windows, an ARM64-specific HyperGuard extent exists - the PAC system register extent. This extent is used by HyperGuard to ask the hypervisor to intercept certain items of interest - such as modifications to an MSR (or ARM64 system register), certain memory access operations, etc. Specifically for the ARM64 version of the Secure Kernel, an extent is registered for monitoring modifications to the PAC key system registers. This is done in `securekernel!SkpgxInitializeInterceptMasks`.
 
-<img src="{{ site.url }}{{ site.baseurl }}/images/pac21.png" alt="">
+<img src="{{ site.url }}{{ site.baseurl }}/images/pac22.png" alt="">
 
 Although ARM-based hypervisors do not have “Virtual Machine Control Structure”, or VMCS (in the “canonical” sense that x86-based systems do, such as having dedicated instructions in the ISA for reading/writing to the VMCS), ARM hypervisors still must maintain the “state” of a guest. This, obviously, is used in situations like when a processor starts executing in context of the hypervisor software (due to a hypervisor call (HVC call), or other exceptions into the hypervisor), or when a guest starts resuming its execution. Part of this state - as is the case with x86-based systems - is the set of _virtual registers_ (e.g., registers which are preserved across exception level changes into/out of the hypervisor and are specific to a guest). Among the virtual registers which are configurable by the hypervisor are, as you may have guessed, the “lo” and “hi” PAC signing key registers! This is what the function from the screenshot above intends to achieve - `securekernel!SkpgArm64ReadRegister64`. Microsoft [documents](https://learn.microsoft.com/en-us/virtualization/hyper-v-on-windows/tlfs/datatypes/hv_register_name) many of the 64-bit virtualized-registers. Among the undocumented registers, however, are the ARM-based virtualized registers. However, we can see above that values `0x4002E` and `0x4002F` correspond to the virtual/private PAC signing registers. For completeness sake, `0x40002` corresponds to `SCTLR_EL1`. This was determined by examining the bit being processed (bit 30, via the `0x40000000` mask). This was previously seen, in the beginning of our analysis, by the toggling of `SCTLR_EL1.EnIB` bit (bit 30).
 
