@@ -14,7 +14,7 @@ It is really "unsaid" these days that any sort of Windows analysis, _de-facto_, 
 2. Windows hypervisor behavior (and, therefore, also OS behavior due to VBS) under ARM's Virtualization Host Extensions (VHE)
 3. Using WinDbg to access ARM system registers using the `rdmsr` command (yes, you read that right! Using the "read MSR" command!)
 4. TrustedZone and Windows VTL co-habitation
-5. Windows-specific implementation of virtual memory: paging heirarchy, address translation, etc.
+5. Windows-specific implementation of virtual memory: paging hierarchy, address translation, etc.
 6. ARM-specific PTE configuration on Windows (e.g., `nt!MMPTE_HARDWARE` differences between x64 and ARM64)
 7. Self-referential paging entries (like self-reference PML4, but for ARM's "level 0" page table) and management of PTEs in virtual memory
 8. Translation Lookaside Buffer (TLB) and context switching
@@ -132,9 +132,9 @@ Before going further, however, it is probably prudent to mention the ARM version
 
 Let's now explore the virtual memory implementation on an ARM-based version of Windows!
 
-Paging Heirarchy
+Paging Hierarchy
 ---
-ARM-based processors also have a paging heirarchy similar to that of Intel. Standard 64-bit Intel machines today have 4 levels of paging, with LA-57 processors capable of implementing 5 levels (although this is beyond the scope of this blog post, as well as ARM's own 52-bit and 56-bit implementation). This means that there are four page tables used in the virtual-to-physical address translation process on ARM64 when 4 levels of paging are involved.
+ARM-based processors also have a paging hierarchy similar to that of Intel. Standard 64-bit Intel machines today have 4 levels of paging, with LA-57 processors capable of implementing 5 levels (although this is beyond the scope of this blog post, as well as ARM's own 52-bit and 56-bit implementation). This means that there are four page tables used in the virtual-to-physical address translation process on ARM64 when 4 levels of paging are involved.
 
 Unlike Intel, ARM lets the operating system have more "of a say" in the configuration of what kind of translation schema will be in-use (of course, only if the architecture supports it, which can be determined via the `ID_AA64MMFR0_EL1` system register). What I mean by this is a specific _translation granule_ is defined in a system register - which effectively defines the level of granularity that the final page in the memory translation process has, otherwise referred to as "the smallest block of memory that can be described". This effectively means the size of a page is the granule. Just like Intel, each paging structure "addresses" a certain range of memory (e.g., table X describes 1 GB of memory, for example). The "last" or "final" paging structure typically describes the smallest unit of memory/final page - which is usually 4KB on 64-bit systems.
 
